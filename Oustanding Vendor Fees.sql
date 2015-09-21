@@ -5,6 +5,9 @@ CREATE PROCEDURE OutstandingVendorFees(month INT, year INT)
     DECLARE monthEnd DATETIME;
     DECLARE _30Days DATETIME;
     DECLARE _60Days DATETIME;
+    DECLARE _90Days DATETIME;
+    DECLARE _180Days DATETIME;
+    DECLARE _365Days DATETIME;
 
     # We define "monthEnd" as midnight of the first day of the following month, in order to account for
     # the time portion of the DATETIME values.
@@ -13,6 +16,9 @@ CREATE PROCEDURE OutstandingVendorFees(month INT, year INT)
 
     SET _30Days = SUBDATE(monthEnd, INTERVAL 1 MONTH);
     SET _60Days = SUBDATE(monthEnd, INTERVAL 2 MONTH);
+    SET _90Days = SUBDATE(monthEnd, INTERVAL 3 MONTH);
+    SET _180Days = SUBDATE(monthEnd, INTERVAL 6 MONTH);
+    SET _365Days = SUBDATE(monthEnd, INTERVAL 12 MONTH);
 
     SELECT
       a.acceptedby 'Vendor No'
@@ -23,6 +29,9 @@ CREATE PROCEDURE OutstandingVendorFees(month INT, year INT)
       , IFNULL(b.fees_outstanding, 0) '30 Day'
       , IFNULL(c.fees_outstanding, 0) '60 Day'
       , IFNULL(d.fees_outstanding, 0) '90 Day'
+      , IFNULL(e.fees_outstanding, 0) '4-6 Mths'
+      , IFNULL(f.fees_outstanding, 0) '7-12 Mths'
+      , IFNULL(g.fees_outstanding, 0) '1 Year+'
       , IFNULL(a.fees_outstanding, 0) 'Outstanding Fees'
       , IFNULL(a.fees_outstanding, 0) + IFNULL(a.fees_paid, 0) 'Total Fees'
     FROM
@@ -62,7 +71,7 @@ CREATE PROCEDURE OutstandingVendorFees(month INT, year INT)
               AND o.order_status = 7 # Completed
               AND p.order_status = 7 # Completed
               AND p.vendor_paid = '0000-00-00 00:00:00' # is null
-              AND t.dts >= _30Days AND t.dts < monthEnd
+              AND t.dts >= _30Days AND t.dts < monthEnd # 1 month
         GROUP BY 1
       ) b ON b.acceptedby = a.acceptedby
       LEFT JOIN
@@ -77,7 +86,7 @@ CREATE PROCEDURE OutstandingVendorFees(month INT, year INT)
               AND o.order_status = 7 # Completed
               AND p.order_status = 7 # Completed
               AND p.vendor_paid = '0000-00-00 00:00:00' # is null
-              AND t.dts >= _60Days AND t.dts < _30Days
+              AND t.dts >= _60Days AND t.dts < _30Days # 2 months
         GROUP BY 1
       ) c ON c.acceptedby = a.acceptedby
       LEFT JOIN
@@ -92,14 +101,59 @@ CREATE PROCEDURE OutstandingVendorFees(month INT, year INT)
               AND o.order_status = 7 # Completed
               AND p.order_status = 7 # Completed
               AND p.vendor_paid = '0000-00-00 00:00:00' # is null
-              AND t.dts < _60Days
+              AND t.dts >= _90Days AND t.dts < _60Days # 3 months
         GROUP BY 1
       ) d ON d.acceptedby = a.acceptedby
+      LEFT JOIN
+      (
+        SELECT
+          p.acceptedby
+          , SUM(p.vendorfee) 'fees_outstanding'
+        FROM orders o
+          JOIN order_parts p ON o.id = p.orderid
+          JOIN client_transactions t ON t.orderid = o.id AND t.type = 'COMPLETED'
+        WHERE o.companyid = 1
+              AND o.order_status = 7 # Completed
+              AND p.order_status = 7 # Completed
+              AND p.vendor_paid = '0000-00-00 00:00:00' # is null
+              AND t.dts >= _180Days AND t.dts < _90Days # 4-6 months
+        GROUP BY 1
+      ) e ON e.acceptedby = a.acceptedby
+      LEFT JOIN
+      (
+        SELECT
+          p.acceptedby
+          , SUM(p.vendorfee) 'fees_outstanding'
+        FROM orders o
+          JOIN order_parts p ON o.id = p.orderid
+          JOIN client_transactions t ON t.orderid = o.id AND t.type = 'COMPLETED'
+        WHERE o.companyid = 1
+              AND o.order_status = 7 # Completed
+              AND p.order_status = 7 # Completed
+              AND p.vendor_paid = '0000-00-00 00:00:00' # is null
+              AND t.dts >= _365Days AND t.dts < _180Days # 7-12 months
+        GROUP BY 1
+      ) f ON f.acceptedby = a.acceptedby
+      LEFT JOIN
+      (
+        SELECT
+          p.acceptedby
+          , SUM(p.vendorfee) 'fees_outstanding'
+        FROM orders o
+          JOIN order_parts p ON o.id = p.orderid
+          JOIN client_transactions t ON t.orderid = o.id AND t.type = 'COMPLETED'
+        WHERE o.companyid = 1
+              AND o.order_status = 7 # Completed
+              AND p.order_status = 7 # Completed
+              AND p.vendor_paid = '0000-00-00 00:00:00' # is null
+              AND t.dts < _365Days # 1 year+
+        GROUP BY 1
+      ) g ON g.acceptedby = a.acceptedby
       JOIN user_data_vendor v ON v.userid = a.acceptedby
       JOIN user u ON u.id = v.userid
       LEFT JOIN user_vendor_segments s ON s.userid = a.acceptedby
     WHERE a.fees_outstanding > 0
-    ORDER BY 9 DESC, 2;
+    ORDER BY 12 DESC, 2;
   END;
 
-# CALL OutstandingVendorFees(7, 2015);
+CALL OutstandingVendorFees(8, 2015);
