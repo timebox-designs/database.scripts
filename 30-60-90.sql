@@ -11,9 +11,12 @@ CALL OutstandingVendorFeesXRef(@month, @year);
 SELECT
   v.userid 'Vendor No'
   , CONCAT_WS(' ', TRIM(v.firstname), TRIM(v.lastname)) 'Vendor Name'
+  , x.count 'Orders Completed'
 FROM
   (
-    SELECT p.acceptedby
+    SELECT
+      p.acceptedby
+      , COUNT(*) 'count'
     FROM order_parts p
       JOIN client_transactions t ON t.orderid = p.orderid AND t.type = 'COMPLETED'
     WHERE t.clientid = 17 # Fannie Mae
@@ -22,7 +25,7 @@ FROM
     HAVING SUM(p.vendorfee) > 0
   ) x
   JOIN user_data_vendor v ON v.userid = x.acceptedby
-ORDER BY 1;
+ORDER BY 3 DESC;
 
 # Trip Fees (without transactions)
 

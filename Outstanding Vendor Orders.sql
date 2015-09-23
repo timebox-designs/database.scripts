@@ -55,7 +55,7 @@ CREATE PROCEDURE OutstandingVendorOrders(month INT, year INT)
               JOIN order_parts p ON o.id = p.orderid
               JOIN client_transactions t ON t.orderid = o.id AND t.type = 'COMPLETED'
             WHERE o.companyid = 1
-                  AND o.order_status = 7 # Completed
+                  AND o.order_status IN (7, 14) # Completed, Reconsideration
                   AND p.order_status = 7 # Completed
                   AND t.dts < monthEnd
             GROUP BY 1, 2, 3
@@ -83,7 +83,7 @@ CREATE PROCEDURE OutstandingVendorOrders(month INT, year INT)
               JOIN order_parts p ON o.id = p.orderid
               JOIN client_transactions t ON t.orderid = o.id AND t.type = 'COMPLETED'
             WHERE o.companyid = 1
-                  AND o.order_status = 7 # Completed
+                  AND o.order_status IN (7, 14) # Completed, Reconsideration
                   AND p.order_status = 7 # Completed
                   AND t.dts >= _30Days AND t.dts < monthEnd # 1 month
             GROUP BY 1, 2, 3
@@ -111,7 +111,7 @@ CREATE PROCEDURE OutstandingVendorOrders(month INT, year INT)
               JOIN order_parts p ON o.id = p.orderid
               JOIN client_transactions t ON t.orderid = o.id AND t.type = 'COMPLETED'
             WHERE o.companyid = 1
-                  AND o.order_status = 7 # Completed
+                  AND o.order_status IN (7, 14) # Completed, Reconsideration
                   AND p.order_status = 7 # Completed
                   AND t.dts >= _60Days AND t.dts < _30Days # 2 months
             GROUP BY 1, 2, 3
@@ -139,7 +139,7 @@ CREATE PROCEDURE OutstandingVendorOrders(month INT, year INT)
               JOIN order_parts p ON o.id = p.orderid
               JOIN client_transactions t ON t.orderid = o.id AND t.type = 'COMPLETED'
             WHERE o.companyid = 1
-                  AND o.order_status = 7 # Completed
+                  AND o.order_status IN (7, 14) # Completed, Reconsideration
                   AND p.order_status = 7 # Completed
                   AND t.dts >= _90Days AND t.dts < _60Days # 3 months
             GROUP BY 1, 2, 3
@@ -167,7 +167,7 @@ CREATE PROCEDURE OutstandingVendorOrders(month INT, year INT)
               JOIN order_parts p ON o.id = p.orderid
               JOIN client_transactions t ON t.orderid = o.id AND t.type = 'COMPLETED'
             WHERE o.companyid = 1
-                  AND o.order_status = 7 # Completed
+                  AND o.order_status IN (7, 14) # Completed, Reconsideration
                   AND p.order_status = 7 # Completed
                   AND t.dts >= _180Days AND t.dts < _90Days # 4-6 months
             GROUP BY 1, 2, 3
@@ -195,7 +195,7 @@ CREATE PROCEDURE OutstandingVendorOrders(month INT, year INT)
               JOIN order_parts p ON o.id = p.orderid
               JOIN client_transactions t ON t.orderid = o.id AND t.type = 'COMPLETED'
             WHERE o.companyid = 1
-                  AND o.order_status = 7 # Completed
+                  AND o.order_status IN (7, 14) # Completed, Reconsideration
                   AND p.order_status = 7 # Completed
                   AND t.dts >= _365Days AND t.dts < _180Days # 7-12 months
             GROUP BY 1, 2, 3
@@ -223,7 +223,7 @@ CREATE PROCEDURE OutstandingVendorOrders(month INT, year INT)
               JOIN order_parts p ON o.id = p.orderid
               JOIN client_transactions t ON t.orderid = o.id AND t.type = 'COMPLETED'
             WHERE o.companyid = 1
-                  AND o.order_status = 7 # Completed
+                  AND o.order_status IN (7, 14) # Completed, Reconsideration
                   AND p.order_status = 7 # Completed
                   AND t.dts < _365Days # 1 year+
             GROUP BY 1, 2, 3

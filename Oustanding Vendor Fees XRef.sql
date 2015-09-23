@@ -60,8 +60,7 @@ CREATE PROCEDURE OutstandingVendorFeesXRef(month INT, year INT)
       , SUM(p.vendorfee) 'paid'
     FROM parts x
       JOIN order_parts p ON p.id = x.id
-      JOIN orders o ON o.id = p.orderid
-      LEFT JOIN client_transactions t ON t.orderid = o.id
+      JOIN client_transactions t ON t.orderid = p.orderid AND t.type = 'COMPLETED'
     WHERE t.dts < monthEnd
     GROUP BY 1;
 
@@ -70,7 +69,7 @@ CREATE PROCEDURE OutstandingVendorFeesXRef(month INT, year INT)
     DROP TEMPORARY TABLE IF EXISTS parts;
   END;
 
-# CALL OutstandingVendorFeesXRef(7, 2015);
+CALL OutstandingVendorFeesXRef(8, 2015);
 
 # Duplicate Checks
 #
